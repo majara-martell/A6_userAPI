@@ -27,9 +27,10 @@ passport.use(new JwtStrategy(jwtOptions, (jwt_payload, done) => {
         .catch(err => done(null, false));
 }));
 
+app.use(passport.initialize());
 app.use(cors());
 app.use(express.json());
-app.use(passport.initialize());
+
 
 
 app.post("/api/user/register", (req, res) => {
