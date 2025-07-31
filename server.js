@@ -13,18 +13,28 @@ dotenv.config();
 const HTTP_PORT = process.env.PORT || 8080;
 const JWT_SECRET = process.env.JWT_SECRET;
 
+if (!JWT_SECRET) {
+    console.error("JWT_SECRET environment variable is not set");
+    process.exit(1);
+}
+
 const ExtractJWT = passportJWT.ExtractJwt;
 const JwtStrategy = passportJWT.Strategy;
 
 const jwtOptions = {
     jwtFromRequest: ExtractJWT.fromAuthHeaderWithScheme('jwt'),
-    secretOrKey: 'z4GH8QFR5Wm0M2avmszuTRRgW',
+    secretOrKey: JWT_SECRET,
 };
 
 passport.use(new JwtStrategy(jwtOptions, (jwt_payload, done) => {
-    userService.getUserById(jwt_payload._id)
-        .then(user => done(null, user))
-        .catch(err => done(null, false));
+    if (jwt_payload) {
+        done(null, {
+            _id: jwt_payload._id,
+            userName: jwt_payload.userName
+        });
+    } else {
+        done(null, false);
+    }
 }));
 
 app.use(passport.initialize());
@@ -104,4 +114,4 @@ userService.connect()
         process.exit();
 });
 
-module.exports = app;
+//module.exports = app;
