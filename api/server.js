@@ -5,7 +5,7 @@ const dotenv = require("dotenv");
 const passport = require("passport");
 const passportJWT = require("passport-jwt");
 const jwt = require("jsonwebtoken");
-const userService = require("./user-service.js");
+const userService = require("../user-service.js");
 
 const app = express();
 dotenv.config();
