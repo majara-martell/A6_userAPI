@@ -17,8 +17,8 @@ const ExtractJWT = passportJWT.ExtractJwt;
 const JwtStrategy = passportJWT.Strategy;
 
 const jwtOptions = {
-    jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
-    secretOrKey: JWT_SECRET
+    jwtFromRequest: ExtractJWT.fromAuthHeaderWithScheme('jwt'),
+    secretOrKey: 'z4GH8QFR5Wm0M2avmszuTRRgW',
 };
 
 passport.use(new JwtStrategy(jwtOptions, (jwt_payload, done) => {
