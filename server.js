@@ -89,6 +89,10 @@ app.delete("/api/user/history/:id", passport.authenticate("jwt", { session: fals
         .catch(msg => res.status(422).json({ error: msg }));
 });
 
+app.use((req, res) => {
+    res.status(404).end();
+});
+
 userService.connect()
     .then(() => {
         app.listen(HTTP_PORT, () => console.log("API listening on: " + HTTP_PORT));
