@@ -50,7 +50,7 @@ app.post("/api/user/register", async (req, res) => {
         res.json({ message: msg });
     } catch (error) {
         console.error("Register error:", error);
-        res.status(422).json({ message: error });
+        res.status(422).json({ message: error.toString() });
     }
 });
 
