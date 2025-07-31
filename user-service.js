@@ -66,6 +66,11 @@ module.exports.checkUser = function (userData) {
         User.findOne({ userName: userData.userName })
             .exec()
             .then(user => {
+                if (!user) {
+                    reject("Unable to find user " + userData.userName);
+                    return;
+                }
+                
                 bcrypt.compare(userData.password, user.password).then(res => {
                     if (res === true) {
                         resolve(user);
@@ -148,7 +153,7 @@ module.exports.addHistory = function (id, historyId) {
     return new Promise(function (resolve, reject) {
 
         User.findById(id).exec().then(user => {
-            if (user.favourites.length < 50) {
+            if (user.history.length < 50) {
                 User.findByIdAndUpdate(id,
                     { $addToSet: { history: historyId } },
                     { new: true }
