@@ -17,20 +17,25 @@ let userSchema = new Schema({
 });
 
 let User;
+let isConnected = false;
 
-module.exports.connect = function () {
-    return new Promise(function (resolve, reject) {
-        let db = mongoose.createConnection(mongoDBConnectionString);
+module.exports.connect = async function () {
+    if (isConnected) return;
 
-        db.on('error', err => {
-            reject(err);
+    try {
+        // Connect using mongoose.connect (recommended)
+        await mongoose.connect(mongoDBConnectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
         });
 
-        db.once('open', () => {
-            User = db.model("users", userSchema);
-            resolve();
-        });
-    });
+        // Initialize the User model once connected
+        User = mongoose.model("users", userSchema);
+
+        isConnected = true;
+    } catch (err) {
+        throw err;
+    }
 };
 
 module.exports.registerUser = function (userData) {
