@@ -1,3 +1,152 @@
+// server.js
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const passport = require("passport");
+const passportJWT = require("passport-jwt");
+const jwt = require("jsonwebtoken");
+const userService = require("./user-service.js");
+
+const app = express();
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    console.error("JWT_SECRET environment variable is not set");
+    process.exit(1);
+}
+
+const ExtractJWT = passportJWT.ExtractJwt;
+const JwtStrategy = passportJWT.Strategy;
+
+const jwtOptions = {
+    jwtFromRequest: ExtractJWT.fromAuthHeaderWithScheme('jwt'),
+    secretOrKey: process.env.JWT_SECRET,
+};
+
+passport.use(new JwtStrategy(jwtOptions, (jwt_payload, done) => {
+    if (jwt_payload) {
+        done(null, {
+            _id: jwt_payload._id,
+            userName: jwt_payload.userName
+        });
+    } else {
+        done(null, false);
+    }
+}));
+
+app.use(passport.initialize());
+app.use(cors());
+app.use(express.json());
+
+// Initialize database connection
+let dbConnected = false;
+const initDB = async () => {
+    if (!dbConnected) {
+        try {
+            await userService.connect();
+            dbConnected = true;
+            console.log("Database connected");
+        } catch (err) {
+            console.error("Database connection failed:", err);
+            throw err;
+        }
+    }
+};
+
+app.post("/api/user/register", async (req, res) => {
+    try {
+        await initDB();
+        const msg = await userService.registerUser(req.body);
+        res.json({ message: msg });
+    } catch (msg) {
+        res.status(422).json({ message: msg });
+    }
+});
+
+app.post("/api/user/login", async (req, res) => {
+    try {
+        await initDB();
+        const user = await userService.checkUser(req.body);
+        const payload = {
+            _id: user._id,
+            userName: user.userName
+        };
+        const token = jwt.sign(payload, JWT_SECRET);
+        res.json({ message: "login successful", token });
+    } catch (msg) {
+        res.status(422).json({ message: msg });
+    }
+});
+
+app.get("/api/user/favourites", passport.authenticate("jwt", { session: false }), async (req, res) => {
+    try {
+        await initDB();
+        const data = await userService.getFavourites(req.user._id);
+        res.json(data);
+    } catch (msg) {
+        res.status(422).json({ error: msg });
+    }
+});
+
+app.put("/api/user/favourites/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
+    try {
+        await initDB();
+        const data = await userService.addFavourite(req.user._id, req.params.id);
+        res.json(data);
+    } catch (msg) {
+        res.status(422).json({ error: msg });
+    }
+});
+
+app.delete("/api/user/favourites/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
+    try {
+        await initDB();
+        const data = await userService.removeFavourite(req.user._id, req.params.id);
+        res.json(data);
+    } catch (msg) {
+        res.status(422).json({ error: msg });
+    }
+});
+
+app.get("/api/user/history", passport.authenticate("jwt", { session: false }), async (req, res) => {
+    try {
+        await initDB();
+        const data = await userService.getHistory(req.user._id);
+        res.json(data);
+    } catch (msg) {
+        res.status(422).json({ error: msg });
+    }
+});
+
+app.put("/api/user/history/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
+    try {
+        await initDB();
+        const data = await userService.addHistory(req.user._id, req.params.id);
+        res.json(data);
+    } catch (msg) {
+        res.status(422).json({ error: msg });
+    }
+});
+
+app.delete("/api/user/history/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
+    try {
+        await initDB();
+        const data = await userService.removeHistory(req.user._id, req.params.id);
+        res.json(data);
+    } catch (msg) {
+        res.status(422).json({ error: msg });
+    }
+});
+
+app.use((req, res) => {
+    res.status(404).end();
+});
+
+// Export for Vercel
+module.exports = app;
+/* 
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -147,153 +296,5 @@ userService.connect().then(() => {
 });
 
 module.exports = app;
-/*
-// server.js
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const passport = require("passport");
-const passportJWT = require("passport-jwt");
-const jwt = require("jsonwebtoken");
-const userService = require("./user-service.js");
-
-const app = express();
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-    console.error("JWT_SECRET environment variable is not set");
-    process.exit(1);
-}
-
-const ExtractJWT = passportJWT.ExtractJwt;
-const JwtStrategy = passportJWT.Strategy;
-
-const jwtOptions = {
-    jwtFromRequest: ExtractJWT.fromAuthHeaderWithScheme('jwt'),
-    secretOrKey: process.env.JWT_SECRET,
-};
-
-passport.use(new JwtStrategy(jwtOptions, (jwt_payload, done) => {
-    if (jwt_payload) {
-        done(null, {
-            _id: jwt_payload._id,
-            userName: jwt_payload.userName
-        });
-    } else {
-        done(null, false);
-    }
-}));
-
-app.use(passport.initialize());
-app.use(cors());
-app.use(express.json());
-
-// Initialize database connection
-let dbConnected = false;
-const initDB = async () => {
-    if (!dbConnected) {
-        try {
-            await userService.connect();
-            dbConnected = true;
-            console.log("Database connected");
-        } catch (err) {
-            console.error("Database connection failed:", err);
-            throw err;
-        }
-    }
-};
-
-app.post("/api/user/register", async (req, res) => {
-    try {
-        await initDB();
-        const msg = await userService.registerUser(req.body);
-        res.json({ message: msg });
-    } catch (msg) {
-        res.status(422).json({ message: msg });
-    }
-});
-
-app.post("/api/user/login", async (req, res) => {
-    try {
-        await initDB();
-        const user = await userService.checkUser(req.body);
-        const payload = {
-            _id: user._id,
-            userName: user.userName
-        };
-        const token = jwt.sign(payload, JWT_SECRET);
-        res.json({ message: "login successful", token });
-    } catch (msg) {
-        res.status(422).json({ message: msg });
-    }
-});
-
-app.get("/api/user/favourites", passport.authenticate("jwt", { session: false }), async (req, res) => {
-    try {
-        await initDB();
-        const data = await userService.getFavourites(req.user._id);
-        res.json(data);
-    } catch (msg) {
-        res.status(422).json({ error: msg });
-    }
-});
-
-app.put("/api/user/favourites/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
-    try {
-        await initDB();
-        const data = await userService.addFavourite(req.user._id, req.params.id);
-        res.json(data);
-    } catch (msg) {
-        res.status(422).json({ error: msg });
-    }
-});
-
-app.delete("/api/user/favourites/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
-    try {
-        await initDB();
-        const data = await userService.removeFavourite(req.user._id, req.params.id);
-        res.json(data);
-    } catch (msg) {
-        res.status(422).json({ error: msg });
-    }
-});
-
-app.get("/api/user/history", passport.authenticate("jwt", { session: false }), async (req, res) => {
-    try {
-        await initDB();
-        const data = await userService.getHistory(req.user._id);
-        res.json(data);
-    } catch (msg) {
-        res.status(422).json({ error: msg });
-    }
-});
-
-app.put("/api/user/history/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
-    try {
-        await initDB();
-        const data = await userService.addHistory(req.user._id, req.params.id);
-        res.json(data);
-    } catch (msg) {
-        res.status(422).json({ error: msg });
-    }
-});
-
-app.delete("/api/user/history/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
-    try {
-        await initDB();
-        const data = await userService.removeHistory(req.user._id, req.params.id);
-        res.json(data);
-    } catch (msg) {
-        res.status(422).json({ error: msg });
-    }
-});
-
-app.use((req, res) => {
-    res.status(404).end();
-});
-
-// Export for Vercel
-module.exports = app;
 */
+
