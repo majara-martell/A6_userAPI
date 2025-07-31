@@ -5,7 +5,7 @@ const dotenv = require("dotenv");
 const passport = require("passport");
 const passportJWT = require("passport-jwt");
 const jwt = require("jsonwebtoken");
-const userService = require("../user-service.js");
+const userService = require("./user-service.js");
 
 const app = express();
 dotenv.config();
@@ -96,6 +96,8 @@ app.use((req, res) => {
 userService.connect()
     .then(() => {
         app.listen(HTTP_PORT, () => console.log("API listening on: " + HTTP_PORT));
+        console.log("ENV MONGO:", process.env.MONGO_URL);
+        console.log("ENV JWT:", process.env.JWT_SECRET);
     })
     .catch(err => {
         console.log("unable to start the server: " + err);
