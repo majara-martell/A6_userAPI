@@ -31,11 +31,23 @@ app.use(cors());
 app.use(express.json());
 app.use(passport.initialize());
 
+app.post("/api/user/register", async (req, res) => {
+    try {
+        await userService.connect();
+        const msg = await userService.registerUser(req.body);
+        res.json({ message: msg });
+    } catch (err) {
+        res.status(422).json({ message: err.toString() });
+    }
+});
+
+/*
 app.post("/api/user/register", (req, res) => {
     userService.registerUser(req.body)
         .then(msg => res.json({ message: msg }))
         .catch(msg => res.status(422).json({ message: msg }));
 });
+*/
 
 app.post("/api/user/login", (req, res) => {
     userService.checkUser(req.body)
